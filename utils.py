@@ -233,13 +233,13 @@ def plot_img_boxes(img, boxes, classes, extras=None, plt_ax=None, figsize=None, 
             x, y = b[0], b[1]
             w, h = b[2], b[3]
 
-        patch = plt_ax.add_patch(patches.Rectangle([x, y], w, h, fill=False, edgecolor=color, lw=2))
-        patch.set_path_effects([patheffects.Stroke(linewidth=3, foreground='black', alpha=0.5), patheffects.Normal()])
+        patch = plt_ax.add_patch(patches.Rectangle([x, y], w, h, fill=False, edgecolor=color, lw=1))
+        patch.set_path_effects([patheffects.Stroke(linewidth=1, foreground='black', alpha=0.5), patheffects.Normal()])
 
         s = class_names[class_id] if class_names else str(class_id)
-        if extras:
-            s += "\n"+str(extras[i])
-        patch = plt_ax.text(x+2, y, s, verticalalignment='top', color=color, fontsize=16, weight='bold')
+#         if extras:
+#             s += "\n"+str(extras[i])
+        patch = plt_ax.text(x, y-10, s, verticalalignment='top', color=color, fontsize=10, weight='bold')
         patch.set_path_effects([patheffects.Stroke(linewidth=1, foreground='black', alpha=0.5), patheffects.Normal()])
 
     _ = plt_ax.imshow(img)
