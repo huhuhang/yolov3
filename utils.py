@@ -11,12 +11,19 @@ import numpy as np
 from matplotlib import pyplot as plt, rcParams, animation, patches, patheffects
 
 
-COCO_MODEL_URL = "https://github.com/huhuhang/yolov3/releases/download/yolov3/yolov3_tiny_coco_01.h5"
+GITHUB_URL = "https://github.com/huhuhang/yolov3/releases/download/yolov3/yolov3_tiny_coco_01.h5"
+SYL_URL = "http://labfile.oss.aliyuncs.com/courses/1233/yolov3_tiny_coco_01.h5"
 
-def download_trained_weights(coco_model_path, verbose=1):
+
+def download_trained_weights(coco_model_path, mirror='shiyanlou', verbose=1):
     """Download COCO trained weights from Releases.
     coco_model_path: local path of COCO trained weights
     """
+    if mirror == 'shiyanlou':
+        COCO_MODEL_URL = SYL_URL
+    else:
+        COCO_MODEL_URL = GITHUB_URL
+
     if verbose > 0:
         print("正在下载预训练模型, 请耐心等待 " + coco_model_path + " ...")
     with urllib.request.urlopen(COCO_MODEL_URL) as resp, open(coco_model_path, 'wb') as out:
@@ -59,11 +66,13 @@ def image2torch(img):
         width = img.width
         height = img.height
         img = torch.ByteTensor(torch.ByteStorage.from_buffer(img.tobytes()))
-        img = img.view(height, width, 3).transpose(0,1).transpose(0,2).contiguous()
+        img = img.view(height, width, 3).transpose(
+            0, 1).transpose(0, 2).contiguous()
         img = img.view(1, 3, height, width)
         img = img.float().div(255.0)
-    elif type(img) == np.ndarray: # cv2 image
-        img = torch.from_numpy(img.transpose(2,0,1)).float().div(255.0).unsqueeze(0)
+    elif type(img) == np.ndarray:  # cv2 image
+        img = torch.from_numpy(img.transpose(
+            2, 0, 1)).float().div(255.0).unsqueeze(0)
     else:
         print("unknown image type")
         exit(-1)
@@ -131,17 +140,17 @@ def multi_bbox_ious(boxes1, boxes2, x1y1x2y2=True):
 
 
 ###################################################################
-## Plotting helpers
+# Plotting helpers
 
 # e.g. plot_multi_detections(img_tensor, model.predict_img(img_tensor))
 def plot_multi_detections(imgs, results, figsize=None, **kwargs):
     if not figsize:
         figsize = (12, min(math.ceil(len(imgs)/3)*4, 30))
     _, axes = plt.subplots(math.ceil(len(imgs)/3), 3, figsize=figsize)
-    
+
     if type(imgs) == np.ndarray and len(imgs.shape) == 4:
         imgs = [imgs]
-    
+
     classes = []
     boxes = []
     extras = []
@@ -150,7 +159,8 @@ def plot_multi_detections(imgs, results, figsize=None, **kwargs):
         if len(res) > 0:
             cla = res[:, -1].astype(int)
             b = res[:, 0:4]
-            e = ["{:.2f} ({:.2f})".format(float(y[4]), float(y[5])) for y in res]
+            e = ["{:.2f} ({:.2f})".format(float(y[4]), float(y[5]))
+                 for y in res]
         else:
             cla, b, e = [], [], []
         classes.append(cla)
@@ -159,11 +169,12 @@ def plot_multi_detections(imgs, results, figsize=None, **kwargs):
 
     for j, ax in enumerate(axes.flat):
         if j >= len(imgs):
-            #break
+            # break
             plt.delaxes(ax)
         else:
-            plot_img_boxes(imgs[j], boxes[j], classes[j], extras[j], plt_ax=ax, **kwargs)
-        
+            plot_img_boxes(imgs[j], boxes[j], classes[j],
+                           extras[j], plt_ax=ax, **kwargs)
+
     plt.tight_layout()
 
 
@@ -186,19 +197,20 @@ def plot_img_data(x, y, rows=2, figsize=(12, 8), **kwargs):
             break
         targets = y[j]
         if isinstance(targets, torch.Tensor):
-            targets = targets.clone().reshape(-1,5)
+            targets = targets.clone().reshape(-1, 5)
             classes = targets[:, 0].cpu().numpy().astype(int)
         else:
             classes = targets[:, 0].astype(int)
         plot_img_boxes(x[j], targets[:, 1:], classes, plt_ax=ax, **kwargs)
-        
+
     plt.tight_layout()
 
 
 def plot_img_boxes(img, boxes, classes, extras=None, plt_ax=None, figsize=None, class_names=None, real_pixels=False, box_centered=True):
     if not plt_ax:
         _, plt_ax = plt.subplots(figsize=figsize)
-    colors = np.array([[1,0,1],[0,0,1],[0,1,1],[0,1,0],[1,1,0],[1,0,0]])
+    colors = np.array([[1, 0, 1], [0, 0, 1], [0, 1, 1],
+                       [0, 1, 0], [1, 1, 0], [1, 0, 0]])
 
     if type(img) == PIL.Image.Image:
         width = img.width
@@ -209,22 +221,25 @@ def plot_img_boxes(img, boxes, classes, extras=None, plt_ax=None, figsize=None, 
             img = img.clone().cpu().numpy()
         width = img.shape[2]
         height = img.shape[1]
-        img = img.transpose(1,2,0)
+        img = img.transpose(1, 2, 0)
         if (img < 1.01).all() and (img >= 0).all():
-            img = img.clip(0, 1) # avoid "Clipping input data to the valid range" warning after tensor roundings
+            # avoid "Clipping input data to the valid range" warning after tensor roundings
+            img = img.clip(0, 1)
     else:
         raise(f"Unkown type for image: {type(img)}")
 
     if len(boxes) > 0 and not real_pixels:
-        boxes[:, 0] *= width; boxes[:, 2] *= width
-        boxes[:, 1] *= height; boxes[:, 3] *= height
+        boxes[:, 0] *= width
+        boxes[:, 2] *= width
+        boxes[:, 1] *= height
+        boxes[:, 3] *= height
 
     for i in range(len(boxes)):
         b, class_id = boxes[i], classes[i]
         if b[0] == 0:
             break
 
-        color = colors[class_id%len(colors)]
+        color = colors[class_id % len(colors)]
 
         if box_centered:
             x, y = (b[0]-b[2]/2, b[1]-b[3]/2)
@@ -233,14 +248,17 @@ def plot_img_boxes(img, boxes, classes, extras=None, plt_ax=None, figsize=None, 
             x, y = b[0], b[1]
             w, h = b[2], b[3]
 
-        patch = plt_ax.add_patch(patches.Rectangle([x, y], w, h, fill=False, edgecolor=color, lw=2))
-        patch.set_path_effects([patheffects.Stroke(linewidth=3, foreground='black', alpha=0.5), patheffects.Normal()])
+        patch = plt_ax.add_patch(patches.Rectangle(
+            [x, y], w, h, fill=False, edgecolor=color, lw=2))
+        patch.set_path_effects([patheffects.Stroke(
+            linewidth=3, foreground='black', alpha=0.5), patheffects.Normal()])
 
         s = class_names[class_id] if class_names else str(class_id)
         if extras:
             s += "\n"+str(extras[i])
-        patch = plt_ax.text(x+2, y, s, verticalalignment='top', color=color, fontsize=16, weight='bold')
-        patch.set_path_effects([patheffects.Stroke(linewidth=1, foreground='black', alpha=0.5), patheffects.Normal()])
+        patch = plt_ax.text(x+2, y, s, verticalalignment='top',
+                            color=color, fontsize=16, weight='bold')
+        patch.set_path_effects([patheffects.Stroke(
+            linewidth=1, foreground='black', alpha=0.5), patheffects.Normal()])
 
     _ = plt_ax.imshow(img)
-
