@@ -9,6 +9,19 @@ import numpy as np
 from matplotlib import pyplot as plt, rcParams, animation, patches, patheffects
 
 
+COCO_MODEL_URL = "https://github.com/huhuhang/yolov3/releases/download/yolov3/yolov3_tiny_coco_01.h5"
+
+def download_trained_weights(coco_model_path, verbose=1):
+    """Download COCO trained weights from Releases.
+    coco_model_path: local path of COCO trained weights
+    """
+    if verbose > 0:
+        print("正在下载预训练模型, 请耐心等待 " + coco_model_path + " ...")
+    with urllib.request.urlopen(COCO_MODEL_URL) as resp, open(coco_model_path, 'wb') as out:
+        shutil.copyfileobj(resp, out)
+    if verbose > 0:
+        print("模型下载完成.")
+
 
 def nms(boxes, nms_thresh):
     if len(boxes) == 0:
